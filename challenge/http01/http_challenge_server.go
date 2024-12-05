@@ -41,12 +41,18 @@ func NewUnixProviderServer(socketPath string, mode fs.FileMode) *ProviderServer 
 	return &ProviderServer{network: "unix", address: socketPath, socketMode: mode, matcher: &hostMatcher{}}
 }
 
+func NewListenerProviderServer(l net.Listener) *ProviderServer {
+	return &ProviderServer{listener: l, matcher: &hostMatcher{}}
+}
+
 // Present starts a web server and makes the token available at `ChallengePath(token)` for web requests.
 func (s *ProviderServer) Present(domain, token, keyAuth string) error {
 	var err error
-	s.listener, err = net.Listen(s.network, s.GetAddress())
-	if err != nil {
-		return fmt.Errorf("could not start HTTP server for challenge: %w", err)
+	if s.listener == nil {
+		s.listener, err = net.Listen(s.network, s.GetAddress())
+		if err != nil {
+			return fmt.Errorf("could not start HTTP server for challenge: %w", err)
+		}
 	}
 
 	if s.network == "unix" {
